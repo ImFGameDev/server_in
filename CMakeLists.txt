@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.30)
-project(di_container VERSION 1.0)
+project(server_in VERSION 1.0)
 
 find_package(Boost 1.75 REQUIRED COMPONENTS json)
 
