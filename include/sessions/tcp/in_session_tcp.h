@@ -12,11 +12,11 @@ namespace main_player::logic::connection
 	private:
 		main_player::core::actions::hash_events_getter<uint8_t, const std::string&>* _event;
 		boost::asio::ip::tcp::socket* _socket;
-		std::uint16_t _buffer_size;
 		std::mutex _socket_mutex;
 		std::atomic<bool> _is_run;
 		std::atomic<bool> _is_closing;
 		float _time_wait_ping;
+		char* _data_size;
 		char* _data;
 
 		std::function<void()> _close_callback;
@@ -30,7 +30,7 @@ namespace main_player::logic::connection
 		void close();
 
 	public:
-		in_session_tcp(boost::asio::ip::tcp::socket* socket, const uint16_t& buffer_size);
+		in_session_tcp(boost::asio::ip::tcp::socket* socket);
 
 		~in_session_tcp() override;
 
