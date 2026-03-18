@@ -1,8 +1,9 @@
 #include <iostream>
+
+#include "../../include/sessions/web/in_web_session.h"
 #include <returnable/hash_events_getter.h>
 #include <debug_system.h>
 
-#include "../../include/sessions/web/in_web_session.h"
 #include "commands.h"
 
 namespace main_player::logic::connection
@@ -42,7 +43,7 @@ namespace main_player::logic::connection
 					return;
 				}
 
-				std::uint8_t tag = static_cast<uint8_t>(message[0]);
+				uint8_t tag = static_cast<uint8_t>(message[0]);
 				std::string json_data = message.substr(1);
 
 				std::string log = "read: " + std::to_string(tag) + '/' + json_data;
@@ -66,7 +67,6 @@ namespace main_player::logic::connection
 		if (_write_queue.empty() || _is_closing || !_ws->is_open())
 		{
 			_is_writing = false;
-
 			return;
 		}
 
@@ -161,9 +161,11 @@ namespace main_player::logic::connection
 	}
 
 	//Public:
-	in_web_session::in_web_session(boost::asio::ip::tcp::socket* socket): _is_closing(false), _is_writing(false)
+	in_web_session::in_web_session(boost::asio::ip::tcp::socket* socket, const uint16_t& buffer_size
+	): _is_closing(false), _is_writing(false)
 	{
 		_ws = new boost::beast::websocket::stream<boost::asio::ip::tcp::socket>(std::move(*socket));
+		_buffer_size = buffer_size;
 		_event = new main_player::core::actions::hash_events_getter<uint8_t, const std::string&>();
 		_time_wait_ping = 0;
 		_is_run = true;

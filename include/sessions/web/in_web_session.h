@@ -16,6 +16,7 @@ namespace main_player::logic::connection
 		boost::beast::websocket::stream<boost::asio::ip::tcp::socket>* _ws;
 		std::function<void()> _close_callback;
 		std::mutex _write_mutex;
+		std::uint16_t _buffer_size;
 		float _time_wait_ping;
 		std::atomic<bool> _is_closing;
 		bool _is_writing;
@@ -30,7 +31,7 @@ namespace main_player::logic::connection
 		void close();
 
 	public:
-		in_web_session(boost::asio::ip::tcp::socket* socket);
+		in_web_session(boost::asio::ip::tcp::socket* socket, const uint16_t& buffer_size);
 
 		~in_web_session() override;
 

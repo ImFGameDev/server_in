@@ -12,11 +12,12 @@ namespace main_player::logic::connection
 	const float _ping_pong = 30;
 
 	//Public:
-	in_session_tcp::in_session_tcp(boost::asio::ip::tcp::socket* socket)
+	in_session_tcp::in_session_tcp(boost::asio::ip::tcp::socket* socket, const uint16_t& buffer_size)
 		: _is_closing(false)
 	{
 		_socket = new boost::asio::ip::tcp::socket(std::move(*socket));
-		_data_size = new char[4];
+		_buffer_size = buffer_size;
+		_data = new char[buffer_size];
 		_event = new main_player::core::actions::hash_events_getter<uint8_t, const std::string&>();
 
 		_time_wait_ping = 0;
@@ -56,7 +57,6 @@ namespace main_player::logic::connection
 
 		delete _event;
 		delete[] _data;
-		delete[] _data_size;
 	}
 
 	//Private:
@@ -68,7 +68,7 @@ namespace main_player::logic::connection
 			return;
 		}
 
-		async_read(*_socket, boost::asio::buffer(_data_size, 4), [this](boost::system::error_code ec, size_t length) -> void
+		async_read(*_socket, boost::asio::buffer(_data, 4), [this](boost::system::error_code ec, size_t length) -> void
 		{
 			if (ec)
 			{
@@ -89,7 +89,7 @@ namespace main_player::logic::connection
 			}
 
 			int packet_length = 0;
-			memcpy(&packet_length, _data_size, 4);
+			memcpy(&packet_length, _data, 4);
 
 			if (packet_length < 1)
 			{
@@ -106,10 +106,6 @@ namespace main_player::logic::connection
 
 	void in_session_tcp::read_data(int length)
 	{
-		delete[] _data;
-
-		_data = new char[length];
-
 		async_read(*_socket, boost::asio::buffer(_data, length),
 		           [this, length](boost::system::error_code ec, size_t bytes_read) -> void
 		           {
@@ -117,7 +113,6 @@ namespace main_player::logic::connection
 			           {
 				           main_player::core::debug::debug_system::error(
 					           "tcp_session", "Read data failed: " + ec.message());
-
 				           close();
 				           return;
 			           }
@@ -133,7 +128,7 @@ namespace main_player::logic::connection
 				           return;
 			           }
 
-			           std::uint8_t tag = _data[0];
+			           uint8_t tag = _data[0];
 			           int data_length = length - 1;
 
 			           std::string json_data(_data + 1, data_length);
@@ -148,7 +143,8 @@ namespace main_player::logic::connection
 	}
 
 	void in_session_tcp::send_internal(const uint8_t& tag, const std::string& json,
-	                                   const std::function<void(boost::system::error_code, size_t)>& callback)
+	                                   const std::function<void(boost::system::error_code, size_t)>& callback
+	)
 	{
 		std::lock_guard<std::mutex> lock(_socket_mutex);
 		if (!_socket->is_open())
