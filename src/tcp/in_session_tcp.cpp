@@ -15,8 +15,7 @@ namespace main_player::logic::connection
 	in_session_tcp::in_session_tcp(boost::asio::ip::tcp::socket* socket): _is_closing(false)
 	{
 		_socket = new boost::asio::ip::tcp::socket(std::move(*socket));
-		_buffer_size = 4096;
-		_data = new char[4096];
+		_data_tag = new char[4];
 		_event = new main_player::core::actions::hash_events_getter<std::uint8_t, const std::string&>();
 
 		_time_wait_ping = 0;
@@ -55,6 +54,7 @@ namespace main_player::logic::connection
 		}
 
 		delete _event;
+		delete[] _data_tag;
 		delete[] _data;
 	}
 
@@ -67,44 +67,48 @@ namespace main_player::logic::connection
 			return;
 		}
 
-		async_read(*_socket, boost::asio::buffer(_data, 4), [this](boost::system::error_code ec, std::size_t length) -> void
-		{
-			if (ec)
-			{
-				if (ec != boost::asio::error::operation_aborted)
-					main_player::core::debug::debug_system::error("tcp_session",
-					                                              "Socket read length failed: " + ec.message());
+		async_read(*_socket, boost::asio::buffer(_data_tag, 4),
+		           [this](boost::system::error_code ec, std::size_t length) -> void
+		           {
+			           if (ec)
+			           {
+				           if (ec != boost::asio::error::operation_aborted)
+					           main_player::core::debug::debug_system::error("tcp_session",
+					                                                         "Socket read length failed: " + ec.
+					                                                         message());
 
-				close();
-				return;
-			}
+				           close();
+				           return;
+			           }
 
-			if (length != 4)
-			{
-				main_player::core::debug::debug_system::error("tcp_session",
-				                                              "Invalid length header size: " + std::to_string(length));
-				close();
-				return;
-			}
+			           if (length != 4)
+			           {
+				           main_player::core::debug::debug_system::error("tcp_session",
+				                                                         "Invalid length header size: " +
+				                                                         std::to_string(length));
+				           close();
+				           return;
+			           }
 
-			int packet_length = 0;
-			memcpy(&packet_length, _data, 4);
+			           int packet_length = 0;
+			           memcpy(&packet_length, _data_tag, 4);
 
-			if (packet_length < 1)
-			{
-				main_player::core::debug::debug_system::error("tcp_session",
-				                                              "Invalid packet length: " + std::to_string(
-					                                              packet_length));
-				close();
-				return;
-			}
+			           if (packet_length < 1)
+			           {
+				           main_player::core::debug::debug_system::error("tcp_session",
+				                                                         "Invalid packet length: " + std::to_string(
+					                                                         packet_length));
+				           close();
+				           return;
+			           }
 
-			read_data(packet_length);
-		});
+			           read_data(packet_length);
+		           });
 	}
 
 	void in_session_tcp::read_data(int length)
 	{
+		_data = new char[length];
 		async_read(*_socket, boost::asio::buffer(_data, length),
 		           [this, length](boost::system::error_code ec, std::size_t bytes_read) -> void
 		           {
@@ -137,11 +141,15 @@ namespace main_player::logic::connection
 
 			           _event->invoke(tag, json_data);
 
+			           delete[] _data;
+
 			           read_length();
 		           });
 	}
 
-	void in_session_tcp::send_internal(const std::uint8_t& tag, const std::string& json, const std::function<void(boost::system::error_code, std::size_t)>& callback)
+	void in_session_tcp::send_internal(const std::uint8_t& tag, const std::string& json,
+	                                   const std::function<void(boost::system::error_code, std::size_t)>& callback
+	)
 	{
 		std::lock_guard<std::mutex> lock(_socket_mutex);
 		if (!_socket->is_open())
