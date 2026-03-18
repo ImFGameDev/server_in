@@ -9,17 +9,17 @@
 
 namespace main_player::logic::connection
 {
+	const int _MAX_PACKET_SIZE = 10 * 1024 * 1024;
+
 	const float _ping_pong = 30;
 
 	//Public:
-	in_session_tcp::in_session_tcp(boost::asio::ip::tcp::socket* socket): _is_closing(false)
+	in_session_tcp::in_session_tcp(boost::asio::ip::tcp::socket* socket): _is_closing(false), _data(nullptr),
+	                                                                      _time_wait_ping(0), _is_run(true)
 	{
 		_socket = new boost::asio::ip::tcp::socket(std::move(*socket));
 		_data_tag = new char[4];
 		_event = new main_player::core::actions::hash_events_getter<std::uint8_t, const std::string&>();
-
-		_time_wait_ping = 0;
-		_is_run = true;
 
 		read_length();
 
@@ -42,12 +42,12 @@ namespace main_player::logic::connection
 				{
 					_socket->close(ec);
 
-					if (ec) std::cerr << "Destruct close error: " << ec.message() << std::endl;
+					if (ec) std::cerr << "destruct close error: " << ec.message() << std::endl;
 				}
 			}
 			catch (const std::exception& e)
 			{
-				std::cerr << "Exception during close: " << e.what() << std::endl;
+				std::cerr << "exception during close: " << e.what() << std::endl;
 			}
 
 			delete _socket;
@@ -55,7 +55,8 @@ namespace main_player::logic::connection
 
 		delete _event;
 		delete[] _data_tag;
-		delete[] _data;
+
+		if (_data) delete[] _data;
 	}
 
 	//Private:
@@ -74,7 +75,7 @@ namespace main_player::logic::connection
 			           {
 				           if (ec != boost::asio::error::operation_aborted)
 					           main_player::core::debug::debug_system::error("tcp_session",
-					                                                         "Socket read length failed: " + ec.
+					                                                         "socket read length failed: " + ec.
 					                                                         message());
 
 				           close();
@@ -84,7 +85,7 @@ namespace main_player::logic::connection
 			           if (length != 4)
 			           {
 				           main_player::core::debug::debug_system::error("tcp_session",
-				                                                         "Invalid length header size: " +
+				                                                         "invalid length header size: " +
 				                                                         std::to_string(length));
 				           close();
 				           return;
@@ -93,10 +94,10 @@ namespace main_player::logic::connection
 			           int packet_length = 0;
 			           memcpy(&packet_length, _data_tag, 4);
 
-			           if (packet_length < 1)
+			           if (packet_length < 1 || packet_length > _MAX_PACKET_SIZE)
 			           {
 				           main_player::core::debug::debug_system::error("tcp_session",
-				                                                         "Invalid packet length: " + std::to_string(
+				                                                         "invalid packet length: " + std::to_string(
 					                                                         packet_length));
 				           close();
 				           return;
@@ -115,17 +116,22 @@ namespace main_player::logic::connection
 			           if (ec)
 			           {
 				           main_player::core::debug::debug_system::error(
-					           "tcp_session", "Read data failed: " + ec.message());
+					           "tcp_session", "read data failed: " + ec.message());
+
+				           delete[] _data;
+
 				           close();
 				           return;
 			           }
 
 			           if (bytes_read != static_cast<std::size_t>(length))
 			           {
-				           std::string log = "Expected: " + std::to_string(length) + ", Got: " + std::to_string(
+				           std::string log = "expected: " + std::to_string(length) + ", Got: " + std::to_string(
 					                             bytes_read);
 
-				           main_player::core::debug::debug_system::error("tcp_session", "Incomplete data read. " + log);
+				           main_player::core::debug::debug_system::error("tcp_session", "incomplete data read. " + log);
+
+				           delete[] _data;
 
 				           close();
 				           return;
@@ -192,7 +198,7 @@ namespace main_player::logic::connection
 		{
 			_socket->close(ec);
 
-			if (ec) main_player::core::debug::debug_system::error("tcp_session", "Close error: " + ec.message());
+			if (ec) main_player::core::debug::debug_system::error("tcp_session", "close error: " + ec.message());
 		}
 
 		if (_close_callback)
@@ -227,7 +233,7 @@ namespace main_player::logic::connection
 			if (ec)
 			{
 				main_player::core::debug::debug_system::error("tcp_session",
-				                                              "Error writing to socket: " + ec.message());
+				                                              "error writing to socket: " + ec.message());
 				close();
 			}
 		};
@@ -246,7 +252,7 @@ namespace main_player::logic::connection
 				return;
 			}
 
-			main_player::core::debug::debug_system::error("tcp_session", "Error writing to socket: " + ec.message());
+			main_player::core::debug::debug_system::error("tcp_session", "error writing to socket: " + ec.message());
 			if (cachedCallback) cachedCallback(false);
 			close();
 		};
