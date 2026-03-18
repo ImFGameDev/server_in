@@ -30,7 +30,7 @@ namespace main_player::logic::connection
 		void close();
 
 	public:
-		in_session_tcp(boost::asio::ip::tcp::socket* socket, const uint16_t& buffer_size);
+		in_session_tcp(boost::asio::ip::tcp::socket* socket);
 
 		~in_session_tcp() override;
 

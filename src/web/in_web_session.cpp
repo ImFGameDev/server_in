@@ -161,11 +161,10 @@ namespace main_player::logic::connection
 	}
 
 	//Public:
-	in_web_session::in_web_session(boost::asio::ip::tcp::socket* socket, const uint16_t& buffer_size
-	): _is_closing(false), _is_writing(false)
+	in_web_session::in_web_session(boost::asio::ip::tcp::socket* socket): _is_closing(false), _is_writing(false)
 	{
 		_ws = new boost::beast::websocket::stream<boost::asio::ip::tcp::socket>(std::move(*socket));
-		_buffer_size = buffer_size;
+		_buffer_size = 4096;
 		_event = new main_player::core::actions::hash_events_getter<uint8_t, const std::string&>();
 		_time_wait_ping = 0;
 		_is_run = true;
