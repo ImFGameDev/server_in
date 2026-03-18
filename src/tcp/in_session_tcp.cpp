@@ -55,8 +55,6 @@ namespace main_player::logic::connection
 
 		delete _event;
 		delete[] _data_tag;
-
-		if (_data) delete[] _data;
 	}
 
 	//Private:
@@ -99,7 +97,6 @@ namespace main_player::logic::connection
 				           main_player::core::debug::debug_system::error("tcp_session",
 				                                                         "invalid packet length: " + std::to_string(
 					                                                         packet_length));
-				           close();
 				           return;
 			           }
 
@@ -126,8 +123,7 @@ namespace main_player::logic::connection
 
 			           if (bytes_read != static_cast<std::size_t>(length))
 			           {
-				           std::string log = "expected: " + std::to_string(length) + ", Got: " + std::to_string(
-					                             bytes_read);
+				           std::string log = "size: " + std::to_string(length) + ", read size: " + std::to_string(bytes_read);
 
 				           main_player::core::debug::debug_system::error("tcp_session", "incomplete data read. " + log);
 
@@ -143,11 +139,12 @@ namespace main_player::logic::connection
 			           std::string json_data(_data + 1, data_length);
 			           std::string log = "read: " + std::to_string(tag) + '/' + json_data;
 
+			           delete[] _data;
+
 			           main_player::core::debug::debug_system::log("tcp_session", log);
 
 			           _event->invoke(tag, json_data);
 
-			           delete[] _data;
 
 			           read_length();
 		           });
