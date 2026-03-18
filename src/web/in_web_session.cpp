@@ -20,7 +20,7 @@ namespace main_player::logic::connection
 
 		auto buffer = std::make_shared<boost::beast::flat_buffer>();
 
-		_ws->async_read(*buffer, [this, buffer](boost::beast::error_code ec, size_t bytes_transferred)
+		_ws->async_read(*buffer, [this, buffer](boost::beast::error_code ec, std::size_t bytes_transferred)
 		{
 			if (ec)
 			{
@@ -43,10 +43,10 @@ namespace main_player::logic::connection
 					return;
 				}
 
-				uint8_t tag = static_cast<uint8_t>(message[0]);
+				std::uint8_t tag = static_cast<std::uint8_t>(message[0]);
 				std::string json_data = message.substr(1);
-
 				std::string log = "read: " + std::to_string(tag) + '/' + json_data;
+
 				main_player::core::debug::debug_system::log("web_session", log);
 
 				_event->invoke(tag, json_data);
@@ -86,7 +86,7 @@ namespace main_player::logic::connection
 
 			main_player::core::debug::debug_system::log("web_session", "send: " + std::to_string(tag) + '/' + json);
 
-			_ws->async_write(boost::asio::buffer(message), [this, callback](boost::beast::error_code ec, size_t)
+			_ws->async_write(boost::asio::buffer(message), [this, callback](boost::beast::error_code ec, std::size_t)
 			{
 				std::lock_guard<std::mutex> lock(_write_mutex);
 
@@ -165,7 +165,7 @@ namespace main_player::logic::connection
 	{
 		_ws = new boost::beast::websocket::stream<boost::asio::ip::tcp::socket>(std::move(*socket));
 		_buffer_size = 4096;
-		_event = new main_player::core::actions::hash_events_getter<uint8_t, const std::string&>();
+		_event = new main_player::core::actions::hash_events_getter<std::uint8_t, const std::string&>();
 		_time_wait_ping = 0;
 		_is_run = true;
 

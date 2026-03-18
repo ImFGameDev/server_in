@@ -56,7 +56,7 @@ namespace main_player::server::http
 			std::string target = _req->target();
 			std::string query_string;
 
-			size_t query_pos = target.find('?');
+			std::size_t query_pos = target.find('?');
 
 			if(query_pos != std::string::npos) query_string = target.substr(query_pos + 1);
 			else query_string = "";

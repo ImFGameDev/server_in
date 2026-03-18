@@ -12,13 +12,12 @@ namespace main_player::logic::connection
 	const float _ping_pong = 30;
 
 	//Public:
-	in_session_tcp::in_session_tcp(boost::asio::ip::tcp::socket* socket)
-		: _is_closing(false)
+	in_session_tcp::in_session_tcp(boost::asio::ip::tcp::socket* socket): _is_closing(false)
 	{
 		_socket = new boost::asio::ip::tcp::socket(std::move(*socket));
 		_buffer_size = 4096;
 		_data = new char[4096];
-		_event = new main_player::core::actions::hash_events_getter<uint8_t, const std::string&>();
+		_event = new main_player::core::actions::hash_events_getter<std::uint8_t, const std::string&>();
 
 		_time_wait_ping = 0;
 		_is_run = true;
@@ -68,7 +67,7 @@ namespace main_player::logic::connection
 			return;
 		}
 
-		async_read(*_socket, boost::asio::buffer(_data, 4), [this](boost::system::error_code ec, size_t length) -> void
+		async_read(*_socket, boost::asio::buffer(_data, 4), [this](boost::system::error_code ec, std::size_t length) -> void
 		{
 			if (ec)
 			{
@@ -107,7 +106,7 @@ namespace main_player::logic::connection
 	void in_session_tcp::read_data(int length)
 	{
 		async_read(*_socket, boost::asio::buffer(_data, length),
-		           [this, length](boost::system::error_code ec, size_t bytes_read) -> void
+		           [this, length](boost::system::error_code ec, std::size_t bytes_read) -> void
 		           {
 			           if (ec)
 			           {
@@ -117,7 +116,7 @@ namespace main_player::logic::connection
 				           return;
 			           }
 
-			           if (bytes_read != static_cast<size_t>(length))
+			           if (bytes_read != static_cast<std::size_t>(length))
 			           {
 				           std::string log = "Expected: " + std::to_string(length) + ", Got: " + std::to_string(
 					                             bytes_read);
@@ -128,7 +127,7 @@ namespace main_player::logic::connection
 				           return;
 			           }
 
-			           uint8_t tag = _data[0];
+			           std::uint8_t tag = _data[0];
 			           int data_length = length - 1;
 
 			           std::string json_data(_data + 1, data_length);
@@ -142,8 +141,7 @@ namespace main_player::logic::connection
 		           });
 	}
 
-	void in_session_tcp::send_internal(const uint8_t& tag, const std::string& json,
-	                                   const std::function<void(boost::system::error_code, size_t)>& callback)
+	void in_session_tcp::send_internal(const std::uint8_t& tag, const std::string& json, const std::function<void(boost::system::error_code, std::size_t)>& callback)
 	{
 		std::lock_guard<std::mutex> lock(_socket_mutex);
 		if (!_socket->is_open())
@@ -154,13 +152,13 @@ namespace main_player::logic::connection
 			return;
 		}
 
-		uint32_t data_length = json.length();
-		uint32_t total_length = data_length + 1;
+		std::uint32_t data_length = json.length();
+		std::uint32_t total_length = data_length + 1;
 
 		char length_buffer[4];
 		memcpy(length_buffer, &total_length, 4);
 
-		uint8_t tag_buffer[1]{tag};
+		std::uint8_t tag_buffer[1]{tag};
 
 		std::vector<boost::asio::const_buffer> buffers;
 
@@ -204,19 +202,19 @@ namespace main_player::logic::connection
 		_close_callback = callback;
 	}
 
-	void in_session_tcp::remove_listener(const uint8_t& tag)
+	void in_session_tcp::remove_listener(const std::uint8_t& tag)
 	{
 		_event->remove_listeners(tag);
 	}
 
-	void in_session_tcp::add_listener(const uint8_t& tag, std::function<void(const std::string&)> func)
+	void in_session_tcp::add_listener(const std::uint8_t& tag, std::function<void(const std::string&)> func)
 	{
 		_event->add_listener(tag, func);
 	}
 
-	void in_session_tcp::send(const uint8_t& tag, const std::string& json)
+	void in_session_tcp::send(const std::uint8_t& tag, const std::string& json)
 	{
-		auto callback = [this](boost::system::error_code ec, size_t) -> void
+		auto callback = [this](boost::system::error_code ec, std::size_t) -> void
 		{
 			if (ec)
 			{
@@ -229,10 +227,10 @@ namespace main_player::logic::connection
 		send_internal(tag, json, callback);
 	}
 
-	void in_session_tcp::send(const uint8_t& tag, const std::string& json, std::function<void(bool)> on_send)
+	void in_session_tcp::send(const std::uint8_t& tag, const std::string& json, std::function<void(bool)> on_send)
 	{
 		auto cachedCallback = std::move(on_send);
-		auto callbackWrite = [this, cachedCallback](boost::system::error_code ec, size_t) -> void
+		auto callbackWrite = [this, cachedCallback](boost::system::error_code ec, std::size_t) -> void
 		{
 			if (!ec)
 			{

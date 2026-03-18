@@ -10,7 +10,7 @@ namespace main_player::logic::connection
 	class in_session_tcp : public i_session
 	{
 	private:
-		main_player::core::actions::hash_events_getter<uint8_t, const std::string&>* _event;
+		main_player::core::actions::hash_events_getter<std::uint8_t, const std::string&>* _event;
 		boost::asio::ip::tcp::socket* _socket;
 		std::uint16_t _buffer_size;
 		std::mutex _socket_mutex;
