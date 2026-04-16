@@ -24,8 +24,9 @@ namespace main_player::logic::connection
 		{
 			if (ec)
 			{
-				if (ec != boost::beast::websocket::error::closed) main_player::core::debug::debug_system::error(
-					"web_session", "WebSocket read failed: " + ec.message());
+				if (ec != boost::beast::websocket::error::closed)
+					main_player::core::debug::debug_system::error("web_session",
+					                                              "WebSocket read failed: " + ec.message());
 
 				close();
 				return;
@@ -115,8 +116,7 @@ namespace main_player::logic::connection
 	}
 
 	void in_web_session::send_internal(const std::uint8_t& tag, const std::string& json,
-	                                   std::function<void(bool)> callback
-	)
+	                                   std::function<void(bool)> callback)
 	{
 		if (!_ws->is_open() || _is_closing)
 		{
@@ -141,8 +141,9 @@ namespace main_player::logic::connection
 			if (_ws && _ws->is_open())
 			{
 				_ws->close(boost::beast::websocket::close_code::normal, ec);
-				if (ec) main_player::core::debug::debug_system::error("web_session",
-				                                                      "WebSocket close error: " + ec.message());
+				if (ec)
+					main_player::core::debug::debug_system::error("web_session",
+					                                              "WebSocket close error: " + ec.message());
 			}
 		}
 		catch (const std::exception& e)
@@ -163,6 +164,8 @@ namespace main_player::logic::connection
 	//Public:
 	in_web_session::in_web_session(boost::asio::ip::tcp::socket* socket): _is_closing(false), _is_writing(false)
 	{
+		core::debug::debug_system::log("web_session", "in_web_session()");
+
 		_ws = new boost::beast::websocket::stream<boost::asio::ip::tcp::socket>(std::move(*socket));
 		_buffer_size = 4096;
 		_event = new main_player::core::actions::hash_events_getter<std::uint8_t, const std::string&>();
@@ -192,6 +195,8 @@ namespace main_player::logic::connection
 
 	in_web_session::~in_web_session()
 	{
+		core::debug::debug_system::log("web_session", "~in_web_session()");
+
 		if (_ws)
 		{
 			try

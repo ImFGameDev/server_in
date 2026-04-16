@@ -31,7 +31,7 @@ namespace main_player::logic::connection
 		void close();
 
 	public:
-		in_web_session(boost::asio::ip::tcp::socket* socket);
+		explicit in_web_session(boost::asio::ip::tcp::socket* socket);
 
 		~in_web_session() override;
 
